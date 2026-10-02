@@ -1,0 +1,12 @@
+.env
+logs/
+state/
+simulations/
+*.csv
+*.jsonl
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.DS_Store

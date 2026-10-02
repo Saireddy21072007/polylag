@@ -1,0 +1,15 @@
+# Core (paper + watch modes work with only these)
+httpx>=0.27,<1.0
+websockets>=12.0,<15.0
+feedparser>=6.0.11,<7.0
+PyYAML>=6.0,<7.0
+python-dotenv>=1.0,<2.0
+
+# Live trading only -- signs and posts real orders.
+# Install deliberately, not by accident:
+#   pip install py-clob-client
+py-clob-client>=0.17,<1.0
+
+# Tests
+pytest>=8.0
+pytest-asyncio>=0.23

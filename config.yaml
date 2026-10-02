@@ -1,0 +1,159 @@
+# polylag configuration
+# ---------------------
+# Everything tunable lives here. Nothing in the Python touches these numbers
+# except by reading this file, so two runs are fully explained by two configs.
+#
+# Read README.md first. The defaults are deliberately tiny.
+
+execution:
+  mode: paper            # paper | live  (the CLI subcommand is what actually decides)
+  fee_bps: 0.0           # taker fee in basis points -- LOOK IT UP, do not trust this
+                         # default. Fee formula: bps/10000 * min(p, 1-p) * shares.
+  order_type: FAK        # FAK = fill what you can immediately, kill the rest.
+                         # Never GTC for this strategy: a resting order is a
+                         # stale opinion someone else gets to trade against.
+  paper_latency_ms: 400        # assumed round trip. Measure yours and raise this.
+  paper_adverse_ticks: 1       # extra slippage assumed on every simulated fill
+  paper_fill_participation: 0.5  # only half of displayed size is assumed real
+  max_order_retries: 2
+
+risk:
+  # Paper only; live mode reads your real USDC balance instead.
+  #
+  # This number is not arbitrary. The venue minimum order is about $5, and
+  # max_trade_pct_of_equity below is 1%, so equity must be at least ~$600 for a
+  # single order to be legal. Below that, every signal is silently rejected as
+  # too small and you would wrongly conclude the strategy never fires.
+  # `run.py doctor` checks this for you and fails if the numbers do not work.
+  starting_bankroll_usdc: 600.0
+
+  # Position sizing -- the smallest of these always wins
+  max_trade_pct_of_equity: 1.0     # 1% of equity per entry
+  max_notional_per_trade_usdc: 10.0
+  max_notional_per_market_usdc: 20.0
+  max_gross_exposure_pct: 10.0     # total open cost basis vs equity
+  max_open_positions: 3
+
+  # Throttles -- these exist to stop a bad rule from firing 40 times in a row
+  max_new_trades_per_hour: 6
+  max_new_trades_per_day: 20
+  cooldown_after_trade_sec: 60
+  loss_streak_pause: 3             # consecutive losers before a forced pause
+  loss_streak_cooldown_sec: 3600
+
+  # Loss limits
+  daily_loss_limit_pct: 2.0        # of the day's opening equity -> halt for the day
+  max_drawdown_pct: 6.0            # from peak equity -> PERMANENT kill latch
+  min_equity_floor_usdc: 400.0     # hard floor -> PERMANENT kill latch
+
+  # Data-quality gates. A stale book is how you donate money.
+  max_book_staleness_ms: 1500
+  max_news_age_sec: 90.0           # the whole thesis is this window
+  max_spread: 0.04
+  min_top_of_book_depth_shares: 50.0
+  max_depth_participation: 0.25    # take at most 25% of visible depth
+
+strategy:
+  min_edge: 0.06                   # required edge AFTER the cost buffer
+  cost_buffer: 0.02                # haircut for fees, slippage and being wrong
+  min_entry_price: 0.08
+  max_entry_price: 0.90
+  max_price_move_since_news: 0.03  # if it already moved this much, the lag is gone
+  quiet_window_sec: 120.0
+
+  take_profit_edge_capture: 0.6    # exit once 60% of the expected move arrives
+  stop_loss: 0.05                  # adverse move that closes the position
+  max_hold_sec: 900.0              # time stop: the repricing never came
+  min_seconds_to_resolution: 1800.0  # never carry a position into settlement
+  exit_slippage_allowance: 0.03    # how far we cross to get out
+
+endpoints:
+  gamma: https://gamma-api.polymarket.com
+  clob: https://clob.polymarket.com
+  clob_ws: wss://ws-subscriptions-clob.polymarket.com/ws/market
+  chain_id: 137
+  http_timeout_sec: 10.0
+  rate_limit_per_sec: 5.0          # self-imposed, well under the venue's limits
+  rate_limit_burst: 10
+  # Uncomment if your network blocks Polymarket. The symptom is a TLS
+  # connection RESET at handshake (not a DNS failure) -- test it with
+  #     curl https://clob.polymarket.com/ok
+  # Applies to Gamma, the CLOB and the news feeds. HTTPS_PROXY works too.
+  # proxy_url: http://user:pass@host:port
+
+news:
+  # HONEST WARNING: public RSS runs 30s to several minutes behind the wire.
+  # That is usually SLOWER than the traders already repricing the market. Use
+  # these to measure whether a lag window exists before paying for a fast feed.
+  max_headlines_per_poll: 40
+  dedupe_cache_size: 5000
+  ignore_older_than_sec: 300.0
+  feeds:
+    - name: bbc-world
+      url: https://feeds.bbci.co.uk/news/world/rss.xml
+      poll_sec: 20
+    - name: npr-news
+      url: https://feeds.npr.org/1001/rss.xml
+      poll_sec: 20
+    - name: aljazeera
+      url: https://www.aljazeera.com/xml/rss/all.xml
+      poll_sec: 20
+    - name: guardian-world
+      url: https://www.theguardian.com/world/rss
+      poll_sec: 30
+      enabled: true
+
+# ---------------------------------------------------------------------------
+# MARKETS
+# ---------------------------------------------------------------------------
+# Slugs go stale constantly. Find current ones with:
+#     python run.py scan "fed"
+# then paste the slug here and write the triggers by hand.
+#
+# A trigger is a claim you are making in advance:
+#   "if a headline contains THESE words, this market belongs near THIS price."
+# If you cannot state it in one sentence, do not trade it.
+#
+# outcome:      which token the headline favours -- QUOTE IT as "YES"/"NO",
+#               because YAML turns unquoted YES/NO into booleans (we convert
+#               them back, but quoting keeps the file honest)
+# target_price: where you think it belongs if the headline is true
+# confidence:   0..1, how far to move from the pre-news price toward the target
+#               fair_value = pre_news_mid + confidence * (target - pre_news_mid)
+# all_of:       every phrase must appear
+# any_of:       at least one must appear
+# none_of:      veto -- any of these kills the match
+#
+# The examples below are ILLUSTRATIVE and the slugs will not resolve. Replace
+# them before running anything past `watch`.
+
+markets:
+  - slug: will-the-fed-cut-rates-in-september
+    enabled: false
+    note: "EXAMPLE ONLY -- replace with a live slug from `run.py scan`"
+    triggers:
+      - name: cut-confirmed
+        outcome: "YES"
+        target_price: 0.95
+        confidence: 0.7
+        all_of: ["federal reserve"]
+        any_of: ["cuts rates", "rate cut", "lowers rates", "cuts interest rates"]
+        none_of: ["expected to", "could", "may", "forecast", "if", "unlikely"]
+      - name: hold-confirmed
+        outcome: "NO"
+        target_price: 0.05
+        confidence: 0.7
+        all_of: ["federal reserve"]
+        any_of: ["holds rates", "leaves rates unchanged", "keeps rates steady"]
+        none_of: ["expected to", "could", "may", "forecast"]
+
+  - slug: example-election-market
+    enabled: false
+    note: "EXAMPLE ONLY -- replace before use"
+    triggers:
+      - name: concession
+        outcome: "NO"
+        target_price: 0.03
+        confidence: 0.8
+        any_of: ["concedes", "concession speech", "withdraws from the race"]
+        none_of: ["refuses to concede", "declines to concede"]
