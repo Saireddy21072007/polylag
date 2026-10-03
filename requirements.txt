@@ -10,3 +10,6 @@ python-dotenv>=1.0,<2.0
 #   pip install py-clob-client
 py-clob-client>=0.17,<1.0
 
+# Tests
+pytest>=8.0
+pytest-asyncio>=0.23
