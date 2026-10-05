@@ -12,7 +12,7 @@ repriced, and buys the lagging side under hard risk limits.
 
 ---
 
-
+## Read this before anything else
 
 **This will probably lose money.** That is not modesty, it is the base rate.
 
