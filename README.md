@@ -227,11 +227,7 @@ fair_value = pre_news_mid + confidence × (target_price − pre_news_mid)
   headline is true.
 - `confidence` — 0..1, how far to travel from anchor to target.
 
-That is all. No embeddings, no LLM, no fitted parameters. It is not a
-probability model and does not claim to be right. It is a way of **writing your
-prior down before you see the price**, so you cannot rationalise a trade
-afterwards. If the output looks silly, your config is wrong — which is the
-point, because the error is visible and editable.
+.
 
 Edge is then `fair_value − ask − cost_buffer`, and must clear `min_edge`.
 
