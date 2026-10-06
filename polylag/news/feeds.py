@@ -228,3 +228,12 @@ class NewsMonitor:
                 continue
 
     
+
+    def _too_old(self, event: NewsEvent) -> bool:
+        if event.published_ms is None:
+            return False  # no timestamp: judge it on when we saw it
+        age = (now_ms() - event.published_ms) / 1000.0
+        if age > self.cfg.ignore_older_than_sec:
+            log.debug("ignoring stale headline (%.0fs): %s", age, event.title[:80])
+            return True
+        return False
