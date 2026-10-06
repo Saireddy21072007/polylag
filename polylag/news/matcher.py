@@ -88,24 +88,3 @@ def evaluate_trigger(trigger: TriggerRule, text_normalized: str) -> tuple[bool, 
     return True, matched
 
 
-class TriggerMatcher:
-    def __init__(self, markets: list[MarketConfig]) -> None:
-        self.markets = [m for m in markets if m.enabled]
-
-    def match(self, event: NewsEvent) -> list[TriggerMatch]:
-        """Every (market, trigger) pair this headline fires.
-
-        One headline can legitimately hit several markets. The risk manager,
-        not this function, decides how many of them we are allowed to act on.
-        """
-        text = normalize(event.text)
-        results: list[TriggerMatch] = []
-        for market in self.markets:
-            for trigger in market.triggers:
-                ok, terms = evaluate_trigger(trigger, text)
-                if ok:
-                    results.append(TriggerMatch(market, trigger, terms))
-                    log.info(
-                        "MATCH %s/%s <- %r", market.slug, trigger.name, event.title[:90]
-                    )
-        return results
