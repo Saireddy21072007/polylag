@@ -13,6 +13,7 @@ repriced, and buys the lagging side under hard risk limits.
 ---
 
 ## Read this before anything else
+**This will probably lose money.** That is not modesty, it is the base rate.
 
 
 The 30-90 second lag between a headline and a repriced market is real, but it is
