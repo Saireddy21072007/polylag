@@ -6,6 +6,9 @@
 
 > Side project. An event-driven trading system built to **measure** whether a news-to-price lag exists — paper mode by default, three layers of risk control, 68 tests. Not investment advice.
 
+A news-lag trading system for Polymarket. It watches news feeds, matches
+headlines against hand-written rules, checks whether a market has *not yet*
+repriced, and buys the lagging side under hard risk limits.
 
 ---
 
